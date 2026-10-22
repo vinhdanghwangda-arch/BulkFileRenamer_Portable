@@ -3,6 +3,11 @@ name: Build Portable Bulk File Renamer
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -17,7 +22,15 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Publish Windows EXE
+      - name: Verify project file
+        shell: pwsh
+        run: |
+          if (!(Test-Path "PortableBulkFileRenamer.csproj")) {
+            Write-Error "Project file not found at repository root."
+            exit 1
+          }
+
+      - name: Publish Windows x64 EXE
         run: >
           dotnet publish PortableBulkFileRenamer.csproj
           -c Release
@@ -28,9 +41,25 @@ jobs:
           -p:EnableCompressionInSingleFile=true
           -o publish/win-x64
 
+      - name: Verify published EXE
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem "publish/win-x64" -Filter "*.exe" -File
+
+          if (!$exe -or $exe.Count -eq 0) {
+            Write-Error "No EXE was generated."
+            exit 1
+          }
+
+          $exe | ForEach-Object {
+            Write-Host "Generated: $($_.FullName)"
+            Write-Host "Size: $($_.Length) bytes"
+          }
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: BulkFileRenamer-win-x64
           path: publish/win-x64/*.exe
           if-no-files-found: error
+          retention-days: 14
