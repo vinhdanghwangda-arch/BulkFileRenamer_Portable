@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using Forms = System.Windows.Forms;
 using ComboBox = System.Windows.Controls.ComboBox;
 using MessageBox = System.Windows.MessageBox;
@@ -18,7 +17,9 @@ public partial class MainWindow : Window
 {
     private readonly ObservableCollection<FileRow> _files = new();
     private readonly ObservableCollection<RenameRule> _rules = new();
-    private readonly HashSet<string> _knownPaths = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _knownPaths =
+        new(StringComparer.OrdinalIgnoreCase);
+
     private List<RenameRecord> _lastBatch = new();
     private bool _isEnglish;
     private bool _syncingGridSelection;
@@ -28,20 +29,26 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
         PreviewGrid.ItemsSource = _files;
         RulesGrid.ItemsSource = _rules;
+
         UpdateLanguage();
         RefreshRuleLabels();
         UpdatePositionControls();
         UpdateActionControls();
     }
 
-    private void LanguageCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void LanguageCombo_SelectionChanged(
+        object sender,
+        SelectionChangedEventArgs e)
     {
-        if (!IsInitialized || LanguageCombo.SelectedItem is not ComboBoxItem item)
+        if (!IsInitialized ||
+            LanguageCombo.SelectedItem is not ComboBoxItem item)
             return;
 
         _isEnglish = item.Tag?.ToString() == "en";
+
         UpdateLanguage();
         RefreshRuleLabels();
         RefreshPreview();
@@ -62,7 +69,10 @@ public partial class MainWindow : Window
         DeselectAllButton.Content = T("Bỏ chọn", "Deselect All");
         KeepSelectedButton.Content = T("Chỉ giữ file đã chọn", "Keep Selected Only");
 
-        RuleBuilderGroup.Header = T("2. Tạo quy tắc đổi tên", "2. Create rename rule");
+        RuleBuilderGroup.Header = T(
+            "2. Tạo quy tắc đổi tên",
+            "2. Create rename rule");
+
         SearchModeLabel.Text = T("Chế độ tìm kiếm", "Search mode");
         ActionLabel.Text = T("Thao tác", "Action");
         FindLabel.Text = T("Tìm cụm ký tự", "Find text");
@@ -93,7 +103,10 @@ public partial class MainWindow : Window
             (T("Từ cuối tên", "From end"), "End")
         });
 
-        CaseSensitiveCheck.Content = T("Phân biệt hoa/thường", "Case-sensitive");
+        CaseSensitiveCheck.Content = T(
+            "Phân biệt hoa/thường",
+            "Case-sensitive");
+
         AllOccurrencesCheck.Content = T(
             "Thay/xóa tất cả kết quả (Bất kỳ vị trí nào)",
             "Replace/remove all matches (Anywhere)");
@@ -159,12 +172,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private void RefreshRuleLabels()
-    {
-        foreach (var rule in _rules)
-            rule.RefreshLabels(_isEnglish);
-    }
-
     private static string GetComboTag(ComboBox combo) =>
         (combo.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "";
 
@@ -172,7 +179,9 @@ public partial class MainWindow : Window
     {
         using var dialog = new Forms.FolderBrowserDialog
         {
-            Description = T("Chọn thư mục chứa file", "Choose a folder containing files"),
+            Description = T(
+                "Chọn thư mục chứa file",
+                "Choose a folder containing files"),
             UseDescriptionForTitle = true,
             ShowNewFolderButton = false
         };
@@ -185,19 +194,23 @@ public partial class MainWindow : Window
 
         try
         {
-            var option = RecursiveCheck.IsChecked == true
+            SearchOption option = RecursiveCheck.IsChecked == true
                 ? SearchOption.AllDirectories
                 : SearchOption.TopDirectoryOnly;
 
-            foreach (string path in Directory.EnumerateFiles(dialog.SelectedPath, "*", option))
+            foreach (string path in Directory.EnumerateFiles(
+                dialog.SelectedPath, "*", option))
+            {
                 _knownPaths.Add(Path.GetFullPath(path));
+            }
 
             SourceText.Text = dialog.SelectedPath;
             LoadRows(_knownPaths);
         }
         catch (Exception ex)
         {
-            ShowError(T("Không thể đọc thư mục: ", "Unable to read folder: ") + ex.Message);
+            ShowError(T("Không thể đọc thư mục: ", "Unable to read folder: ")
+                + ex.Message);
         }
     }
 
@@ -225,7 +238,7 @@ public partial class MainWindow : Window
 
     private void RecursiveCheck_Changed(object sender, RoutedEventArgs e)
     {
-        // The option is applied when the folder is selected again.
+        // Applied when the folder is selected again.
     }
 
     private void LoadRows(IEnumerable<string> paths)
@@ -260,25 +273,33 @@ public partial class MainWindow : Window
         UpdateCount();
     }
 
-    private void FilterBox_TextChanged(object sender, TextChangedEventArgs e) => ApplyFilter();
+    private void FilterBox_TextChanged(
+        object sender,
+        TextChangedEventArgs e)
+    {
+        ApplyFilter();
+    }
 
     private void ApplyFilter()
     {
         if (PreviewGrid == null)
             return;
 
-        var view = System.Windows.Data.CollectionViewSource.GetDefaultView(_files);
+        var view = System.Windows.Data.CollectionViewSource
+            .GetDefaultView(_files);
+
         string filter = FilterBox?.Text?.Trim() ?? "";
 
         view.Filter = obj =>
             obj is FileRow row &&
             (filter.Length == 0 ||
-             row.OldName.Contains(filter, StringComparison.OrdinalIgnoreCase));
+             row.OldName.Contains(
+                 filter, StringComparison.OrdinalIgnoreCase));
     }
 
     private void SelectAll_Click(object sender, RoutedEventArgs e)
     {
-        foreach (var row in _files)
+        foreach (FileRow row in _files)
             row.IsSelected = true;
 
         PreviewGrid.Items.Refresh();
@@ -287,7 +308,7 @@ public partial class MainWindow : Window
 
     private void DeselectAll_Click(object sender, RoutedEventArgs e)
     {
-        foreach (var row in _files)
+        foreach (FileRow row in _files)
             row.IsSelected = false;
 
         PreviewGrid.Items.Refresh();
@@ -299,11 +320,13 @@ public partial class MainWindow : Window
         var kept = _files.Where(r => r.IsSelected).ToList();
 
         _files.Clear();
-        foreach (var row in kept)
+
+        foreach (FileRow row in kept)
             _files.Add(row);
 
         _knownPaths.Clear();
-        foreach (var row in kept)
+
+        foreach (FileRow row in kept)
             _knownPaths.Add(row.FullPath);
 
         ApplyFilter();
@@ -321,13 +344,13 @@ public partial class MainWindow : Window
         {
             _syncingGridSelection = true;
 
-            foreach (var item in e.AddedItems)
+            foreach (object item in e.AddedItems)
             {
                 if (item is FileRow row)
                     row.IsSelected = true;
             }
 
-            foreach (var item in e.RemovedItems)
+            foreach (object item in e.RemovedItems)
             {
                 if (item is FileRow row)
                     row.IsSelected = false;
@@ -342,11 +365,12 @@ public partial class MainWindow : Window
         }
     }
 
+    // Fix: explicitly use WPF KeyEventArgs to avoid ambiguity with WinForms.
     private void PreviewGrid_PreviewKeyDown(
         object sender,
-        KeyEventArgs e)
+        System.Windows.Input.KeyEventArgs e)
     {
-        if (e.Key != Key.Space)
+        if (e.Key != System.Windows.Input.Key.Space)
             return;
 
         var selectedRows = PreviewGrid.SelectedItems
@@ -358,15 +382,18 @@ public partial class MainWindow : Window
 
         bool checkAll = selectedRows.Any(row => !row.IsSelected);
 
-        foreach (var row in selectedRows)
+        foreach (FileRow row in selectedRows)
             row.IsSelected = checkAll;
 
         PreviewGrid.Items.Refresh();
         UpdateCount();
+
         e.Handled = true;
     }
 
-    private void SearchMode_Changed(object sender, SelectionChangedEventArgs e)
+    private void SearchMode_Changed(
+        object sender,
+        SelectionChangedEventArgs e)
     {
         UpdatePositionControls();
     }
@@ -377,11 +404,14 @@ public partial class MainWindow : Window
             return;
 
         bool exact = GetComboTag(SearchModeCombo) == "ExactPosition";
+
         PositionBox.IsEnabled = exact;
         PositionDirectionCombo.IsEnabled = exact;
     }
 
-    private void Action_Changed(object sender, SelectionChangedEventArgs e)
+    private void Action_Changed(
+        object sender,
+        SelectionChangedEventArgs e)
     {
         UpdateActionControls();
     }
@@ -395,7 +425,8 @@ public partial class MainWindow : Window
         bool findRequired = action is "Replace" or "Remove";
 
         FindBox.IsEnabled = findRequired;
-        ReplaceBox.IsEnabled = action is "Replace" or "AddPrefix" or "AddSuffix";
+        ReplaceBox.IsEnabled =
+            action is "Replace" or "AddPrefix" or "AddSuffix";
 
         ReplaceLabel.Text = action switch
         {
@@ -405,9 +436,12 @@ public partial class MainWindow : Window
         };
 
         SearchModeCombo.IsEnabled = findRequired;
+
         PositionBox.IsEnabled =
             findRequired && GetComboTag(SearchModeCombo) == "ExactPosition";
+
         PositionDirectionCombo.IsEnabled = PositionBox.IsEnabled;
+
         AllOccurrencesCheck.IsEnabled =
             findRequired && GetComboTag(SearchModeCombo) == "Anywhere";
     }
@@ -418,9 +452,12 @@ public partial class MainWindow : Window
         string mode = GetComboTag(SearchModeCombo);
         string find = FindBox.Text;
 
-        if ((action is "Replace" or "Remove") && string.IsNullOrEmpty(find))
+        if ((action is "Replace" or "Remove") &&
+            string.IsNullOrEmpty(find))
         {
-            ShowError(T("Nhập cụm ký tự cần tìm.", "Enter the text to find."));
+            ShowError(T(
+                "Nhập cụm ký tự cần tìm.",
+                "Enter the text to find."));
             return;
         }
 
@@ -490,8 +527,11 @@ public partial class MainWindow : Window
         RenumberRules();
     }
 
-    private void MoveRuleUp_Click(object sender, RoutedEventArgs e) => MoveRule(-1);
-    private void MoveRuleDown_Click(object sender, RoutedEventArgs e) => MoveRule(1);
+    private void MoveRuleUp_Click(object sender, RoutedEventArgs e) =>
+        MoveRule(-1);
+
+    private void MoveRuleDown_Click(object sender, RoutedEventArgs e) =>
+        MoveRule(1);
 
     private void MoveRule(int delta)
     {
@@ -520,13 +560,16 @@ public partial class MainWindow : Window
         RulesGrid.Items.Refresh();
     }
 
-    private void Preview_Click(object sender, RoutedEventArgs e) => BuildPreview();
+    private void Preview_Click(object sender, RoutedEventArgs e) =>
+        BuildPreview();
 
     private void BuildPreview()
     {
         if (_files.Count == 0)
         {
-            ShowError(T("Hãy chọn file hoặc thư mục trước.", "Choose files or a folder first."));
+            ShowError(T(
+                "Hãy chọn file hoặc thư mục trước.",
+                "Choose files or a folder first."));
             return;
         }
 
@@ -534,14 +577,16 @@ public partial class MainWindow : Window
 
         if (selected.Count == 0)
         {
-            ShowError(T("Hãy chọn ít nhất một file.", "Select at least one file."));
+            ShowError(T(
+                "Hãy chọn ít nhất một file.",
+                "Select at least one file."));
             return;
         }
 
         var computed = new Dictionary<FileRow, string>();
         var statuses = new Dictionary<FileRow, string>();
 
-        foreach (var row in selected)
+        foreach (FileRow row in selected)
         {
             try
             {
@@ -549,7 +594,7 @@ public partial class MainWindow : Window
                 string ext = Path.GetExtension(oldName);
                 string stem = oldName[..(oldName.Length - ext.Length)];
 
-                foreach (var rule in _rules)
+                foreach (RenameRule rule in _rules)
                     stem = ApplyRule(stem, rule);
 
                 string newName = stem + ext;
@@ -557,7 +602,8 @@ public partial class MainWindow : Window
 
                 if (!IsValidFileName(newName))
                     statuses[row] = T("Tên không hợp lệ", "Invalid filename");
-                else if (string.Equals(oldName, newName, StringComparison.Ordinal))
+                else if (string.Equals(
+                    oldName, newName, StringComparison.Ordinal))
                     statuses[row] = T("Không thay đổi", "Unchanged");
                 else
                     statuses[row] = T("Sẵn sàng", "Ready");
@@ -574,8 +620,9 @@ public partial class MainWindow : Window
             }
         }
 
-        var proposedTargets = new Dictionary<string, List<FileRow>>(
-            StringComparer.OrdinalIgnoreCase);
+        var proposedTargets =
+            new Dictionary<string, List<FileRow>>(
+                StringComparer.OrdinalIgnoreCase);
 
         foreach (var pair in computed.Where(
             p => statuses[p.Key] == T("Sẵn sàng", "Ready")))
@@ -590,17 +637,18 @@ public partial class MainWindow : Window
 
         foreach (var pair in proposedTargets.Where(p => p.Value.Count > 1))
         {
-            foreach (var row in pair.Value)
+            foreach (FileRow row in pair.Value)
                 statuses[row] = T("Trùng tên đích", "Duplicate target");
         }
 
         var movingSources = new HashSet<string>(
             selected
-                .Where(r => statuses.GetValueOrDefault(r) == T("Sẵn sàng", "Ready"))
+                .Where(r => statuses.GetValueOrDefault(r) ==
+                            T("Sẵn sàng", "Ready"))
                 .Select(r => r.FullPath),
             StringComparer.OrdinalIgnoreCase);
 
-        foreach (var row in selected)
+        foreach (FileRow row in selected)
         {
             row.NewName = computed.GetValueOrDefault(row, row.OldName);
 
@@ -609,17 +657,20 @@ public partial class MainWindow : Window
                 string target = Path.Combine(row.Folder, row.NewName);
 
                 if (File.Exists(target) &&
-                    !string.Equals(target, row.FullPath, StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(
+                        target, row.FullPath,
+                        StringComparison.OrdinalIgnoreCase) &&
                     !movingSources.Contains(target))
                 {
                     statuses[row] = T("Đích đã tồn tại", "Target exists");
                 }
             }
 
-            row.Status = statuses.GetValueOrDefault(row, T("Lỗi", "Error"));
+            row.Status = statuses.GetValueOrDefault(
+                row, T("Lỗi", "Error"));
         }
 
-        foreach (var row in _files.Where(r => !r.IsSelected))
+        foreach (FileRow row in _files.Where(r => !r.IsSelected))
         {
             row.NewName = row.OldName;
             row.Status = T("Bỏ qua", "Skipped");
@@ -639,10 +690,13 @@ public partial class MainWindow : Window
         {
             case "AddPrefix":
                 return rule.Replace + stem;
+
             case "AddSuffix":
                 return stem + rule.Replace;
+
             case "Uppercase":
                 return stem.ToUpperInvariant();
+
             case "Lowercase":
                 return stem.ToLowerInvariant();
         }
@@ -676,7 +730,8 @@ public partial class MainWindow : Window
 
                 return rule.AllOccurrences
                     ? ReplaceAll(stem, rule.Find, rule.Replace, cmp)
-                    : stem.Remove(index, rule.Find.Length).Insert(index, rule.Replace);
+                    : stem.Remove(index, rule.Find.Length)
+                        .Insert(index, rule.Replace);
 
             case "Prefix":
                 if (!stem.StartsWith(rule.Find, cmp))
@@ -715,7 +770,13 @@ public partial class MainWindow : Window
                     : rule.Position - 1;
 
                 if (index + rule.Find.Length > stem.Length ||
-                    !string.Equals(stem.Substring(index, rule.Find.Length), rule.Find, cmp))
+                    string.Compare(
+                        stem, index,
+                        rule.Find, 0,
+                        rule.Find.Length,
+                        rule.CaseSensitive
+                            ? StringComparison.Ordinal
+                            : StringComparison.OrdinalIgnoreCase) != 0)
                 {
                     throw new RuleMismatchException(
                         T("không khớp tại vị trí đã chọn",
@@ -724,7 +785,8 @@ public partial class MainWindow : Window
 
                 return rule.Action == "Remove"
                     ? stem.Remove(index, rule.Find.Length)
-                    : stem.Remove(index, rule.Find.Length).Insert(index, rule.Replace);
+                    : stem.Remove(index, rule.Find.Length)
+                        .Insert(index, rule.Replace);
 
             default:
                 return stem;
@@ -737,26 +799,31 @@ public partial class MainWindow : Window
         string replace,
         StringComparison comparison)
     {
+        if (string.IsNullOrEmpty(find))
+            return input;
+
         if (comparison == StringComparison.Ordinal)
             return input.Replace(find, replace, StringComparison.Ordinal);
 
-        var result = input;
+        var result = new System.Text.StringBuilder();
         int start = 0;
 
-        while (true)
+        while (start < input.Length)
         {
-            int idx = result.IndexOf(find, start, StringComparison.OrdinalIgnoreCase);
-            if (idx < 0)
-                break;
+            int index = input.IndexOf(find, start, comparison);
 
-            result = result.Remove(idx, find.Length).Insert(idx, replace);
-            start = idx + replace.Length;
-
-            if (start > result.Length)
+            if (index < 0)
+            {
+                result.Append(input, start, input.Length - start);
                 break;
+            }
+
+            result.Append(input, start, index - start);
+            result.Append(replace);
+            start = index + find.Length;
         }
 
-        return result;
+        return result.ToString();
     }
 
     private static bool IsValidFileName(string name) =>
@@ -774,7 +841,9 @@ public partial class MainWindow : Window
 
         if (ready.Count == 0)
         {
-            ShowError(T("Không có file hợp lệ để đổi tên.", "No valid files to rename."));
+            ShowError(T(
+                "Không có file hợp lệ để đổi tên.",
+                "No valid files to rename."));
             return;
         }
 
@@ -799,7 +868,7 @@ public partial class MainWindow : Window
 
         try
         {
-            foreach (var record in records)
+            foreach (RenameRecord record in records)
             {
                 string temp = Path.Combine(
                     Path.GetDirectoryName(record.OriginalPath)!,
@@ -824,14 +893,18 @@ public partial class MainWindow : Window
             _lastBatch = records;
             SaveHistory(records);
 
+            var renamedPaths = records.ToDictionary(
+                r => r.OriginalPath,
+                r => r.FinalPath,
+                StringComparer.OrdinalIgnoreCase);
+
             _knownPaths.Clear();
 
-            foreach (var row in _files)
+            foreach (FileRow row in _files)
             {
-                string path = records.FirstOrDefault(
-                    r => r.OriginalPath.Equals(
-                        row.FullPath, StringComparison.OrdinalIgnoreCase))
-                    ?.FinalPath ?? row.FullPath;
+                string path = renamedPaths.TryGetValue(row.FullPath, out string? finalPath)
+                    ? finalPath
+                    : row.FullPath;
 
                 if (File.Exists(path))
                     _knownPaths.Add(path);
@@ -840,7 +913,9 @@ public partial class MainWindow : Window
             LoadRows(_knownPaths);
 
             MessageBox.Show(
-                T($"Đã đổi tên {records.Count} file.", $"Renamed {records.Count} files."),
+                T(
+                    $"Đã đổi tên {records.Count} file.",
+                    $"Renamed {records.Count} files."),
                 "Portable Bulk File Renamer",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -851,11 +926,18 @@ public partial class MainWindow : Window
             {
                 try
                 {
-                    if (File.Exists(item.Temp) && !File.Exists(item.Record.OriginalPath))
+                    if (File.Exists(item.Temp) &&
+                        !File.Exists(item.Record.OriginalPath))
+                    {
                         File.Move(item.Temp, item.Record.OriginalPath);
+                    }
                     else if (File.Exists(item.Record.FinalPath) &&
                              !File.Exists(item.Record.OriginalPath))
-                        File.Move(item.Record.FinalPath, item.Record.OriginalPath);
+                    {
+                        File.Move(
+                            item.Record.FinalPath,
+                            item.Record.OriginalPath);
+                    }
                 }
                 catch
                 {
@@ -864,8 +946,10 @@ public partial class MainWindow : Window
             }
 
             ShowError(
-                T("Đổi tên gặp lỗi; đã thử khôi phục các file. ",
-                  "Rename failed; rollback was attempted. ") + ex.Message);
+                T(
+                    "Đổi tên gặp lỗi; đã thử khôi phục các file. ",
+                    "Rename failed; rollback was attempted. ") +
+                ex.Message);
 
             LoadRows(_knownPaths.Where(File.Exists));
         }
@@ -878,16 +962,19 @@ public partial class MainWindow : Window
 
         if (_lastBatch.Count == 0)
         {
-            ShowError(T("Không có lịch sử hoàn tác.", "No undo history available."));
+            ShowError(T(
+                "Không có lịch sử hoàn tác.",
+                "No undo history available."));
             return;
         }
 
-        foreach (var record in _lastBatch)
+        foreach (RenameRecord record in _lastBatch)
         {
             if (!File.Exists(record.FinalPath))
             {
                 ShowError(
-                    T("Không tìm thấy file đã đổi tên: ", "Renamed file not found: ") +
+                    T("Không tìm thấy file đã đổi tên: ",
+                      "Renamed file not found: ") +
                     record.FinalPath);
                 return;
             }
@@ -895,7 +982,8 @@ public partial class MainWindow : Window
             if (File.Exists(record.OriginalPath))
             {
                 ShowError(
-                    T("Tên gốc đã được sử dụng: ", "Original path is occupied: ") +
+                    T("Tên gốc đã được sử dụng: ",
+                      "Original path is occupied: ") +
                     record.OriginalPath);
                 return;
             }
@@ -905,7 +993,7 @@ public partial class MainWindow : Window
 
         try
         {
-            foreach (var record in _lastBatch)
+            foreach (RenameRecord record in _lastBatch)
             {
                 string temp = Path.Combine(
                     Path.GetDirectoryName(record.FinalPath)!,
@@ -920,7 +1008,7 @@ public partial class MainWindow : Window
 
             _knownPaths.Clear();
 
-            foreach (var record in _lastBatch)
+            foreach (RenameRecord record in _lastBatch)
                 _knownPaths.Add(record.OriginalPath);
 
             _lastBatch.Clear();
@@ -948,7 +1036,8 @@ public partial class MainWindow : Window
             {
                 var batches =
                     JsonSerializer.Deserialize<List<List<RenameRecord>>>(
-                        File.ReadAllText(path)) ?? new List<List<RenameRecord>>();
+                        File.ReadAllText(path))
+                    ?? new List<List<RenameRecord>>();
 
                 return batches.LastOrDefault() ?? new List<RenameRecord>();
             }
@@ -993,6 +1082,7 @@ public partial class MainWindow : Window
         try
         {
             Directory.CreateDirectory(portable);
+
             string test = Path.Combine(portable, ".write_test");
             File.WriteAllText(test, "ok");
             File.Delete(test);
@@ -1002,10 +1092,12 @@ public partial class MainWindow : Window
         catch
         {
             string local = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                Environment.GetFolderPath(
+                    Environment.SpecialFolder.LocalApplicationData),
                 "BulkFileRenamer");
 
             Directory.CreateDirectory(local);
+
             return Path.Combine(local, "rename-history.json");
         }
     }
@@ -1016,8 +1108,20 @@ public partial class MainWindow : Window
             BuildPreview();
     }
 
+    private void RefreshRuleLabels()
+    {
+        foreach (RenameRule rule in _rules)
+            rule.RefreshLabels(_isEnglish);
+
+        if (RulesGrid != null)
+            RulesGrid.Items.Refresh();
+    }
+
     private void UpdateCount()
     {
+        if (CountText == null)
+            return;
+
         CountText.Text = T(
             $"{_files.Count} file | đã chọn: {_files.Count(r => r.IsSelected)}",
             $"{_files.Count} files | selected: {_files.Count(r => r.IsSelected)}");
@@ -1084,8 +1188,12 @@ public sealed class FileRow : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    private void OnPropertyChanged([CallerMemberName] string? name = null) =>
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    private void OnPropertyChanged(
+        [CallerMemberName] string? name = null)
+    {
+        PropertyChanged?.Invoke(
+            this, new PropertyChangedEventArgs(name));
+    }
 }
 
 public sealed class RenameRule : INotifyPropertyChanged
@@ -1165,8 +1273,12 @@ public sealed class RenameRule : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    private void OnPropertyChanged([CallerMemberName] string? name = null) =>
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    private void OnPropertyChanged(
+        [CallerMemberName] string? name = null)
+    {
+        PropertyChanged?.Invoke(
+            this, new PropertyChangedEventArgs(name));
+    }
 }
 
 public sealed class RenameRecord
