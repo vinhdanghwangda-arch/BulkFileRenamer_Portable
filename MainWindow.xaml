@@ -1,97 +1,135 @@
 <Window x:Class="PortableBulkFileRenamer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Portable Bulk File Renamer" Height="790" Width="1250"
-        MinHeight="650" MinWidth="980" WindowStartupLocation="CenterScreen">
+        Title="Portable Bulk File Renamer" Height="900" Width="1400"
+        MinHeight="720" MinWidth="1080" WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="12,6"/><Setter Property="Margin" Value="4,2"/>
+            <Setter Property="MinHeight" Value="30"/>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="6,4"/><Setter Property="Margin" Value="4,2"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Padding" Value="5,3"/><Setter Property="Margin" Value="4,2"/>
+            <Setter Property="MinHeight" Value="28"/>
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Margin" Value="4,5"/><Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
     <Grid Margin="14">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-
         <DockPanel Grid.Row="0" Margin="0,0,0,8">
-            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
-                <TextBlock x:Name="LanguageLabel" Text="Ngôn ngữ / Language:" VerticalAlignment="Center" Margin="5"/>
-                <ComboBox x:Name="LanguageCombo" Width="115" SelectedIndex="0" SelectionChanged="LanguageCombo_SelectionChanged">
-                    <ComboBoxItem Content="Tiếng Việt" Tag="vi"/>
-                    <ComboBoxItem Content="English" Tag="en"/>
-                </ComboBox>
-            </StackPanel>
+            <ComboBox x:Name="LanguageCombo" Width="130" DockPanel.Dock="Right" SelectedIndex="0" SelectionChanged="LanguageCombo_SelectionChanged">
+                <ComboBoxItem Content="Tiếng Việt" Tag="vi"/><ComboBoxItem Content="English" Tag="en"/>
+            </ComboBox>
             <TextBlock x:Name="AppTitle" Text="Portable Bulk File Renamer" FontSize="24" FontWeight="Bold" VerticalAlignment="Center"/>
         </DockPanel>
 
-        <GroupBox Grid.Row="1" x:Name="SourceGroup" Header="Nguồn file / File source" Padding="8" Margin="0,0,0,8">
+        <GroupBox Grid.Row="1" x:Name="SourceGroup" Header="1. Nguồn file" Padding="8" Margin="0,0,0,8">
             <Grid>
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBox x:Name="FolderBox" Grid.Column="0" IsReadOnly="True" VerticalContentAlignment="Center"/>
-                <Button x:Name="ChooseFolderButton" Grid.Column="1" Content="Chọn thư mục..." Click="ChooseFolder_Click"/>
-                <Button x:Name="ChooseFilesButton" Grid.Column="2" Content="Chọn file..." Click="ChooseFiles_Click"/>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <TextBox x:Name="SourceText" Grid.Row="0" Grid.Column="0" IsReadOnly="True"/>
+                <Button x:Name="ChooseFolderButton" Grid.Column="1" Content="Chọn thư mục" Click="ChooseFolder_Click"/>
+                <Button x:Name="ChooseFilesButton" Grid.Column="2" Content="Chọn file" Click="ChooseFiles_Click"/>
                 <Button x:Name="ClearButton" Grid.Column="3" Content="Xóa danh sách" Click="Clear_Click"/>
-                <CheckBox x:Name="RecursiveCheck" Grid.Row="1" Content="Bao gồm thư mục con / Include subfolders" IsChecked="True"/>
+                <StackPanel Grid.Row="1" Grid.ColumnSpan="4" Orientation="Horizontal">
+                    <CheckBox x:Name="RecursiveCheck" Content="Bao gồm thư mục con" IsChecked="False" Checked="RecursiveCheck_Changed" Unchecked="RecursiveCheck_Changed"/>
+                    <TextBlock x:Name="FilterLabel" Text="Lọc tên file:" VerticalAlignment="Center" Margin="18,0,0,0"/>
+                    <TextBox x:Name="FilterBox" Width="280" TextChanged="FilterBox_TextChanged"/>
+                    <Button x:Name="SelectAllButton" Content="Chọn tất cả" Click="SelectAll_Click"/>
+                    <Button x:Name="DeselectAllButton" Content="Bỏ chọn" Click="DeselectAll_Click"/>
+                    <Button x:Name="KeepSelectedButton" Content="Chỉ giữ file đã chọn" Click="KeepSelected_Click"/>
+                </StackPanel>
             </Grid>
         </GroupBox>
 
-        <GroupBox Grid.Row="2" x:Name="RulesGroup" Header="Quy tắc đổi tên / Rename rules" Padding="8" Margin="0,0,0,8">
+        <GroupBox Grid.Row="2" x:Name="RuleBuilderGroup" Header="2. Tạo quy tắc đổi tên" Padding="8" Margin="0,0,0,8">
             <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1.15*"/>
-                    <ColumnDefinition Width="1.15*"/>
-                    <ColumnDefinition Width="1.15*"/>
-                    <ColumnDefinition Width="1.15*"/>
-                    <ColumnDefinition Width="1.1*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                <TextBlock x:Name="PrefixLabel" Grid.Row="0" Grid.Column="0" Text="Tiền tố / Prefix" Margin="4"/>
-                <TextBlock x:Name="FindLabel" Grid.Row="0" Grid.Column="1" Text="Tìm / Find" Margin="4"/>
-                <TextBlock x:Name="ReplaceLabel" Grid.Row="0" Grid.Column="2" Text="Thay bằng / Replace" Margin="4"/>
-                <TextBlock x:Name="SuffixLabel" Grid.Row="0" Grid.Column="3" Text="Hậu tố / Suffix" Margin="4"/>
-                <TextBlock x:Name="RemoveLabel" Grid.Row="0" Grid.Column="4" Text="Xóa cụm từ / Remove" Margin="4"/>
-                <TextBox x:Name="PrefixBox" Grid.Row="1" Grid.Column="0"/>
-                <TextBox x:Name="FindBox" Grid.Row="1" Grid.Column="1"/>
-                <TextBox x:Name="ReplaceBox" Grid.Row="1" Grid.Column="2"/>
-                <TextBox x:Name="SuffixBox" Grid.Row="1" Grid.Column="3"/>
-                <TextBox x:Name="RemoveBox" Grid.Row="1" Grid.Column="4"/>
-                <StackPanel Grid.Row="0" Grid.RowSpan="2" Grid.Column="5" VerticalAlignment="Center">
-                    <CheckBox x:Name="NumberCheck" Content="Đánh số / Number" IsChecked="False" Checked="NumberCheck_Changed" Unchecked="NumberCheck_Changed"/>
-                    <StackPanel x:Name="NumberOptions" Orientation="Horizontal">
-                        <TextBlock x:Name="StartLabel" Text="Bắt đầu" VerticalAlignment="Center"/>
-                        <TextBox x:Name="NumberStartBox" Text="1" Width="48"/>
-                        <TextBlock x:Name="DigitsLabel" Text="Số chữ số" VerticalAlignment="Center"/>
-                        <TextBox x:Name="DigitsBox" Text="3" Width="42"/>
-                    </StackPanel>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="1.2*"/></Grid.ColumnDefinitions>
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                <TextBlock x:Name="SearchModeLabel" Grid.Row="0" Grid.Column="0" Text="Chế độ tìm kiếm" Margin="4"/>
+                <TextBlock x:Name="ActionLabel" Grid.Row="0" Grid.Column="1" Text="Thao tác" Margin="4"/>
+                <TextBlock x:Name="FindLabel" Grid.Row="0" Grid.Column="2" Text="Tìm cụm ký tự" Margin="4"/>
+                <TextBlock x:Name="ReplaceLabel" Grid.Row="0" Grid.Column="3" Text="Thay bằng" Margin="4"/>
+                <TextBlock x:Name="PositionLabel" Grid.Row="0" Grid.Column="4" Text="Vị trí bắt đầu từ" Margin="4"/>
+                <ComboBox x:Name="SearchModeCombo" Grid.Row="1" Grid.Column="0" SelectedIndex="0" SelectionChanged="SearchMode_Changed">
+                    <ComboBoxItem Content="Bất kỳ vị trí nào" Tag="Anywhere"/><ComboBoxItem Content="Đầu tên file" Tag="Prefix"/>
+                    <ComboBoxItem Content="Cuối tên file" Tag="Suffix"/><ComboBoxItem Content="Vị trí chính xác" Tag="ExactPosition"/>
+                </ComboBox>
+                <ComboBox x:Name="ActionCombo" Grid.Row="1" Grid.Column="1" SelectedIndex="0" SelectionChanged="Action_Changed">
+                    <ComboBoxItem Content="Thay thế" Tag="Replace"/><ComboBoxItem Content="Xóa cụm ký tự" Tag="Remove"/>
+                    <ComboBoxItem Content="Thêm tiền tố" Tag="AddPrefix"/><ComboBoxItem Content="Thêm hậu tố" Tag="AddSuffix"/>
+                    <ComboBoxItem Content="Chuyển thành chữ hoa" Tag="Uppercase"/><ComboBoxItem Content="Chuyển thành chữ thường" Tag="Lowercase"/>
+                </ComboBox>
+                <TextBox x:Name="FindBox" Grid.Row="1" Grid.Column="2"/>
+                <TextBox x:Name="ReplaceBox" Grid.Row="1" Grid.Column="3"/>
+                <StackPanel Grid.Row="1" Grid.Column="4" Orientation="Horizontal">
+                    <TextBox x:Name="PositionBox" Width="60" Text="1"/>
+                    <ComboBox x:Name="PositionDirectionCombo" Width="135" SelectedIndex="0">
+                        <ComboBoxItem Content="Từ đầu tên" Tag="Start"/><ComboBoxItem Content="Từ cuối tên" Tag="End"/>
+                    </ComboBox>
                 </StackPanel>
-                <StackPanel Grid.Row="2" Grid.ColumnSpan="6" Orientation="Horizontal" Margin="0,5,0,0">
-                    <CheckBox x:Name="CaseSensitiveCheck" Content="Phân biệt hoa/thường khi tìm / Case-sensitive find" IsChecked="False"/>
-                    <CheckBox x:Name="KeepExtensionCheck" Content="Giữ nguyên phần mở rộng / Keep extension" IsChecked="True"/>
-                    <Button x:Name="PreviewButton" Content="Xem trước / Preview" Click="Preview_Click" Background="#FFDAEAF8"/>
-                    <Button x:Name="RenameButton" Content="Đổi tên / Rename" Click="Rename_Click" Background="#FFD9F2D9"/>
-                    <Button x:Name="UndoButton" Content="Hoàn tác / Undo" Click="Undo_Click"/>
+                <StackPanel Grid.Row="2" Grid.Column="4" Margin="4,0,4,4">
+                    <TextBlock x:Name="ExampleStartText" Text="Ví dụ: 123_AHU — ký tự thứ 4 là _, ký tự thứ 5 là A." TextWrapping="Wrap" FontSize="11" Foreground="#FF606A75"/>
+                    <TextBlock x:Name="ExampleEndText" Text="Ví dụ: 123_AHU — ký tự thứ 1 là U, ký tự thứ 2 là H, ký tự thứ 3 là A." TextWrapping="Wrap" FontSize="11" Foreground="#FF606A75"/>
+                </StackPanel>
+                <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4" Orientation="Horizontal">
+                    <CheckBox x:Name="CaseSensitiveCheck" Content="Phân biệt hoa/thường" IsChecked="False"/>
+                    <CheckBox x:Name="AllOccurrencesCheck" Content="Thay/xóa tất cả kết quả (Bất kỳ vị trí nào)" IsChecked="True"/>
+                </StackPanel>
+                <TextBlock x:Name="PrefixLabel" Grid.Row="3" Grid.Column="0" Text="Prefix — Đầu tên file" Margin="4"/>
+                <TextBlock x:Name="SuffixLabel" Grid.Row="3" Grid.Column="1" Text="Suffix — Cuối tên file" Margin="4"/>
+                <TextBox x:Name="PrefixQuickBox" Grid.Row="4" Grid.Column="0"/>
+                <TextBox x:Name="SuffixQuickBox" Grid.Row="4" Grid.Column="1"/>
+                <StackPanel Grid.Row="4" Grid.Column="2" Grid.ColumnSpan="3" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="AddPrefixQuickButton" Content="Thêm quy tắc tiền tố" Click="AddPrefixQuick_Click"/>
+                    <Button x:Name="AddSuffixQuickButton" Content="Thêm quy tắc hậu tố" Click="AddSuffixQuick_Click"/>
+                </StackPanel>
+                <TextBlock x:Name="ExtensionNote" Grid.Row="5" Grid.ColumnSpan="5" Text="Tìm kiếm trên tên file, không gồm phần mở rộng; phần mở rộng được giữ nguyên." Margin="4" Foreground="#FF4B647A"/>
+                <StackPanel Grid.Row="6" Grid.ColumnSpan="5" Orientation="Horizontal" HorizontalAlignment="Left">
+                    <Button x:Name="AddRuleButton" Content="Thêm quy tắc" Click="AddRule_Click" Background="#FFDAEAF8"/>
+                    <Button x:Name="RemoveRuleButton" Content="Xóa quy tắc đã chọn" Click="RemoveRule_Click"/>
+                    <Button x:Name="MoveUpButton" Content="Lên ↑" Click="MoveRuleUp_Click"/>
+                    <Button x:Name="MoveDownButton" Content="Xuống ↓" Click="MoveRuleDown_Click"/>
+                    <Button x:Name="PreviewButton" Content="Xem trước" Click="Preview_Click" Background="#FFDAEAF8"/>
+                    <Button x:Name="RenameButton" Content="Đổi tên file đã chọn" Click="Rename_Click" Background="#FFD9F2D9"/>
+                    <Button x:Name="UndoButton" Content="Hoàn tác" Click="Undo_Click"/>
                 </StackPanel>
             </Grid>
         </GroupBox>
 
-        <DataGrid Grid.Row="3" x:Name="PreviewGrid" AutoGenerateColumns="False" IsReadOnly="True"
-                  CanUserAddRows="False" SelectionMode="Extended" SelectionUnit="FullRow"
-                  AlternatingRowBackground="#FFF4F7FA" HeadersVisibility="Column">
+        <GroupBox Grid.Row="3" x:Name="RulesListGroup" Header="3. Thứ tự quy tắc (chạy từ trên xuống)" Padding="5" Margin="0,0,0,8">
+            <DataGrid x:Name="RulesGrid" Height="120" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" SelectionMode="Single" SelectionUnit="FullRow">
+                <DataGrid.Columns>
+                    <DataGridTextColumn x:Name="RuleOrderColumn" Header="#" Binding="{Binding Order}" Width="45"/>
+                    <DataGridTextColumn x:Name="RuleSearchColumn" Header="Chế độ tìm kiếm" Binding="{Binding SearchModeLabel}" Width="1.2*"/>
+                    <DataGridTextColumn x:Name="RuleActionColumn" Header="Thao tác" Binding="{Binding ActionLabel}" Width="1.2*"/>
+                    <DataGridTextColumn x:Name="RuleFindColumn" Header="Tìm" Binding="{Binding Find}" Width="*"/>
+                    <DataGridTextColumn x:Name="RuleReplaceColumn" Header="Thay bằng" Binding="{Binding Replace}" Width="*"/>
+                    <DataGridTextColumn x:Name="RulePositionColumn" Header="Vị trí" Binding="{Binding PositionDescription}" Width="*"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </GroupBox>
+
+        <DataGrid Grid.Row="4" x:Name="PreviewGrid" AutoGenerateColumns="False" CanUserAddRows="False" SelectionMode="Extended" SelectionUnit="FullRow" AlternatingRowBackground="#FFF4F7FA" HeadersVisibility="Column">
             <DataGrid.Columns>
-                <DataGridTextColumn x:Name="StatusColumn" Header="Trạng thái / Status" Binding="{Binding Status}" Width="140"/>
-                <DataGridTextColumn x:Name="OldColumn" Header="Tên hiện tại / Current name" Binding="{Binding OldName}" Width="2*"/>
-                <DataGridTextColumn x:Name="NewColumn" Header="Tên mới / New name" Binding="{Binding NewName}" Width="2*"/>
-                <DataGridTextColumn x:Name="FolderColumn" Header="Thư mục / Folder" Binding="{Binding Folder}" Width="2*"/>
+                <DataGridCheckBoxColumn x:Name="IncludeColumn" Header="Đổi tên" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="65"/>
+                <DataGridTextColumn x:Name="StatusColumn" Header="Trạng thái" Binding="{Binding Status}" Width="145"/>
+                <DataGridTextColumn x:Name="OldColumn" Header="Tên hiện tại" Binding="{Binding OldName}" Width="1.5*"/>
+                <DataGridTextColumn x:Name="NewColumn" Header="Tên mới dự kiến" Binding="{Binding NewName}" Width="1.5*"/>
+                <DataGridTextColumn x:Name="FolderColumn" Header="Thư mục" Binding="{Binding Folder}" Width="2*"/>
             </DataGrid.Columns>
         </DataGrid>
 
-        <DockPanel Grid.Row="4" Margin="0,8,0,0">
+        <DockPanel Grid.Row="5" Margin="0,8,0,0">
             <TextBlock x:Name="PrivacyText" Text="Chạy cục bộ; không gửi file hoặc tên file ra ngoài." VerticalAlignment="Center"/>
             <TextBlock x:Name="CountText" DockPanel.Dock="Right" Text="0 file" FontWeight="SemiBold" VerticalAlignment="Center"/>
         </DockPanel>

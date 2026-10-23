@@ -1,42 +1,42 @@
 # Portable Bulk File Renamer
 
-Ứng dụng WPF đổi tên file hàng loạt cho Windows 10/11 64-bit. Xử lý cục bộ, không có chức năng kết nối mạng hoặc tải dữ liệu lên.
+Ứng dụng WPF C# dành cho Windows 10/11 x64 để đổi tên hàng loạt file cục bộ. Giao diện có Tiếng Việt/English. Ứng dụng không cần kết nối mạng và không gửi tên file hoặc nội dung file ra ngoài.
 
-## Tính năng hiện có
-- Chọn một thư mục (có thể quét thư mục con) hoặc chọn nhiều file.
-- Thêm tiền tố, hậu tố.
-- Tìm và thay thế cụm từ; tùy chọn phân biệt chữ hoa/thường.
-- Xóa cụm từ.
-- Đánh số tự động với số bắt đầu và số chữ số tùy chỉnh.
-- Giữ nguyên phần mở rộng theo mặc định.
-- Xem trước tên mới và cảnh báo tên không hợp lệ/trùng tên/đích đã tồn tại.
-- Xác nhận trước khi đổi tên.
-- Ghi lịch sử JSON và hoàn tác batch gần nhất trong phiên ứng dụng.
-- Giao diện Việt/Anh.
+## Chức năng
 
-## Build file EXE Portable
-Yêu cầu trên máy build: Windows và .NET 8 SDK. Máy chạy EXE không cần cài .NET khi phát hành self-contained.
+- Chọn thư mục (mặc định không quét thư mục con) hoặc chọn nhiều file từ nhiều thư mục.
+- Lọc danh sách, chọn/bỏ chọn tất cả, chỉ giữ các file đã chọn.
+- Tạo nhiều quy tắc đổi tên và sắp xếp thứ tự chạy.
+- Chế độ tìm kiếm: Anywhere, Prefix, Suffix, Exact Position.
+- Thao tác: Replace, Remove, Add Prefix, Add Suffix, Uppercase, Lowercase.
+- Vị trí bắt đầu từ 1; có thể đếm từ đầu hoặc cuối tên cơ sở; phần mở rộng được loại khỏi phép tìm và giữ nguyên.
+- Xem trước, kiểm tra tên không hợp lệ, trùng tên đích, đích đã tồn tại và trường hợp quy tắc không khớp.
+- Xác nhận trước khi đổi tên, lưu lịch sử và hỗ trợ hoàn tác lô gần nhất.
 
-1. Giải nén thư mục dự án.
-2. Cài .NET 8 SDK trên máy build nếu chưa có.
-3. Nhấp đúp `publish-win-x64.bat`.
-4. File phát hành nằm tại `publish\\win-x64\\BulkFileRenamer.exe`.
-5. Chép EXE sang USB hoặc thư mục khác để chạy. Không cần installer.
+## Build bằng Visual Studio
 
-Có thể chạy lệnh tương đương trong thư mục dự án:
+1. Mở `PortableBulkFileRenamer.csproj` bằng Visual Studio 2022/2026 có workload **.NET desktop development**.
+2. Chọn cấu hình `Release` và nền tảng `x64` (hoặc Any CPU; publish vẫn chỉ định `win-x64`).
+3. Build hoặc dùng script `publish-win-x64.bat` trên Windows có .NET 8 SDK.
+
+## Publish một EXE portable
+
+Trên Windows với .NET 8 SDK, chạy:
 
 ```powershell
-dotnet publish PortableBulkFileRenamer.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o publish\\win-x64
+dotnet publish PortableBulkFileRenamer.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o publish/win-x64
 ```
 
-## An toàn và giới hạn
-- Chỉ đổi tên file; không đọc nội dung file.
-- Không gửi dữ liệu ra ngoài.
-- Trước khi chạy trên dữ liệu quan trọng, thử trên một thư mục sao chép.
-- Tool không tự tạo bản sao lưu nội dung file. Undo dùng lịch sử đường dẫn và chỉ hoạt động khi file đã đổi tên vẫn còn ở đường dẫn đích, đường dẫn gốc chưa bị chiếm.
-- Lịch sử được ghi vào thư mục `History` cạnh EXE nếu có quyền ghi; nếu không, dùng `%LOCALAPPDATA%\\BulkFileRenamer`.
-- Nếu chọn thư mục con, mọi file trong đó có thể được đưa vào danh sách; kiểm tra preview kỹ trước khi xác nhận.
-- Windows có thể yêu cầu xác nhận khi chạy EXE tải từ Internet, tùy chính sách bảo mật.
+EXE nằm trong `publish/win-x64`. Nên kiểm tra trên máy Windows 10 x64 trước khi phân phối. Single-file self-contained không có nghĩa là đã được kiểm thử trên mọi máy.
 
-## Current validation status
-Source project and publish script are provided. The EXE has **not** been built or tested in this environment because the .NET SDK and Windows/WPF build environment are unavailable here. Build on a Windows machine with .NET 8 SDK, then test with copied sample files before production use.
+## GitHub Actions
+
+Workflow ở `.github/workflows/build.yml` chạy khi push lên `main` hoặc khi chạy thủ công từ tab **Actions**. Artifact `BulkFileRenamer-win-x64` chứa EXE publish.
+
+## Safety notes
+
+- Chạy thử với bản sao dữ liệu trước khi đổi tên thư mục/file quan trọng.
+- Đổi tên chỉ áp dụng cho các dòng được chọn và có trạng thái `Ready` sau Preview.
+- Nếu một quy tắc tìm kiếm không khớp, file đó không được đánh dấu Ready.
+- Hoàn tác cần đường dẫn file đích còn tồn tại và đường dẫn gốc còn trống.
+- Đây là source code được cung cấp để build; chưa khẳng định đã biên dịch hoặc kiểm thử thành công trong môi trường này.
