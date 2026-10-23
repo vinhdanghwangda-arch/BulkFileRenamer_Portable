@@ -1,4 +1,3 @@
-
 using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -9,6 +8,8 @@ using System.Windows;
 using System.Windows.Controls;
 using Forms = System.Windows.Forms;
 using ComboBox = System.Windows.Controls.ComboBox;
+using MessageBox = System.Windows.MessageBox;
+using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 
 namespace PortableBulkFileRenamer;
 
@@ -19,7 +20,6 @@ public partial class MainWindow : Window
     private readonly HashSet<string> _knownPaths = new(StringComparer.OrdinalIgnoreCase);
     private List<RenameRecord> _lastBatch = new();
     private bool _isEnglish;
-    private bool _changingLanguage;
 
     private string T(string vi, string en) => _isEnglish ? en : vi;
 
@@ -36,18 +36,24 @@ public partial class MainWindow : Window
 
     private void LanguageCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (!IsInitialized || LanguageCombo.SelectedItem is not ComboBoxItem item) return;
+        if (!IsInitialized || LanguageCombo.SelectedItem is not ComboBoxItem item)
+            return;
+
         _isEnglish = item.Tag?.ToString() == "en";
         UpdateLanguage();
         RefreshRuleLabels();
+
+        foreach (var rule in _rules)
+            rule.RefreshLabels(_isEnglish);
+
         RefreshPreview();
     }
 
     private void UpdateLanguage()
     {
-        _changingLanguage = true;
         Title = "Portable Bulk File Renamer";
         AppTitle.Text = "Portable Bulk File Renamer";
+
         SourceGroup.Header = T("1. Nguồn file", "1. File source");
         ChooseFolderButton.Content = T("Chọn thư mục", "Choose Folder");
         ChooseFilesButton.Content = T("Chọn file", "Choose Files");
@@ -57,6 +63,7 @@ public partial class MainWindow : Window
         SelectAllButton.Content = T("Chọn tất cả", "Select All");
         DeselectAllButton.Content = T("Bỏ chọn", "Deselect All");
         KeepSelectedButton.Content = T("Chỉ giữ file đã chọn", "Keep Selected Only");
+
         RuleBuilderGroup.Header = T("2. Tạo quy tắc đổi tên", "2. Create rename rule");
         SearchModeLabel.Text = T("Chế độ tìm kiếm", "Search mode");
         ActionLabel.Text = T("Thao tác", "Action");
@@ -64,29 +71,35 @@ public partial class MainWindow : Window
         ReplaceLabel.Text = T("Thay bằng", "Replace with");
         PositionLabel.Text = T("Vị trí bắt đầu từ", "Position counted from");
 
-        SetComboLabels(SearchModeCombo, new[]
-        {
-            ("Bất kỳ vị trí nào", "Anywhere"),
-            ("Đầu tên file", "Prefix"),
-            ("Cuối tên file", "Suffix"),
-            ("Vị trí chính xác", "Exact Position")
-        });
+        SetComboLabels(
+            SearchModeCombo,
+            new[]
+            {
+                (T("Bất kỳ vị trí nào", "Anywhere"), "Anywhere"),
+                (T("Đầu tên file", "Prefix"), "Prefix"),
+                (T("Cuối tên file", "Suffix"), "Suffix"),
+                (T("Vị trí chính xác", "Exact Position"), "Exact Position")
+            });
 
-        SetComboLabels(ActionCombo, new[]
-        {
-            ("Thay thế", "Replace"),
-            ("Xóa cụm ký tự", "Remove"),
-            ("Thêm tiền tố", "Add Prefix"),
-            ("Thêm hậu tố", "Add Suffix"),
-            ("Chuyển thành chữ hoa", "Uppercase"),
-            ("Chuyển thành chữ thường", "Lowercase")
-        });
+        SetComboLabels(
+            ActionCombo,
+            new[]
+            {
+                (T("Thay thế", "Replace"), "Replace"),
+                (T("Xóa cụm ký tự", "Remove"), "Remove"),
+                (T("Thêm tiền tố", "Add Prefix"), "Add Prefix"),
+                (T("Thêm hậu tố", "Add Suffix"), "Add Suffix"),
+                (T("Chuyển thành chữ hoa", "Uppercase"), "Uppercase"),
+                (T("Chuyển thành chữ thường", "Lowercase"), "Lowercase")
+            });
 
-        SetComboLabels(PositionDirectionCombo, new[]
-        {
-            ("Từ đầu tên", "From start"),
-            ("Từ cuối tên", "From end")
-        });
+        SetComboLabels(
+            PositionDirectionCombo,
+            new[]
+            {
+                (T("Từ đầu tên", "From start"), "From start"),
+                (T("Từ cuối tên", "From end"), "From end")
+            });
 
         CaseSensitiveCheck.Content = T("Phân biệt hoa/thường", "Case-sensitive");
         AllOccurrencesCheck.Content = T(
@@ -116,6 +129,7 @@ public partial class MainWindow : Window
         PreviewButton.Content = T("Xem trước", "Preview");
         RenameButton.Content = T("Đổi tên file đã chọn", "Rename Selected Files");
         UndoButton.Content = T("Hoàn tác", "Undo");
+
         RulesListGroup.Header = T(
             "3. Thứ tự quy tắc (chạy từ trên xuống)",
             "3. Rule order (top to bottom)");
@@ -136,70 +150,27 @@ public partial class MainWindow : Window
             "Chạy cục bộ; không gửi file hoặc tên file ra ngoài.",
             "Runs locally; no files or filenames are sent externally.");
 
-        _changingLanguage = false;
         UpdateCount();
     }
 
-    private static void SetComboLabels(ComboBox combo, (string Vi, string En)[] labels)
+    private static void SetComboLabels(
+        ComboBox combo,
+        (string Label, string Tag)[] items)
     {
-        for (int i = 0; i < combo.Items.Count && i < labels.Length; i++)
+        for (int i = 0; i < combo.Items.Count && i < items.Length; i++)
         {
             if (combo.Items[i] is ComboBoxItem item)
             {
-                item.Content = labels[i].En;
+                item.Content = items[i].Label;
+                item.Tag = items[i].Tag;
             }
         }
     }
 
     private void RefreshRuleLabels()
     {
-        SetComboLabels(SearchModeCombo, _isEnglish
-            ? new[]
-            {
-                ("Anywhere", "Anywhere"),
-                ("Prefix", "Prefix"),
-                ("Suffix", "Suffix"),
-                ("Exact Position", "Exact Position")
-            }
-            : new[]
-            {
-                ("Bất kỳ vị trí nào", "Bất kỳ vị trí nào"),
-                ("Đầu tên file", "Đầu tên file"),
-                ("Cuối tên file", "Cuối tên file"),
-                ("Vị trí chính xác", "Vị trí chính xác")
-            });
-
-        SetComboLabels(ActionCombo, _isEnglish
-            ? new[]
-            {
-                ("Replace", "Replace"),
-                ("Remove", "Remove"),
-                ("Add Prefix", "Add Prefix"),
-                ("Add Suffix", "Add Suffix"),
-                ("Uppercase", "Uppercase"),
-                ("Lowercase", "Lowercase")
-            }
-            : new[]
-            {
-                ("Thay thế", "Thay thế"),
-                ("Xóa cụm ký tự", "Xóa cụm ký tự"),
-                ("Thêm tiền tố", "Thêm tiền tố"),
-                ("Thêm hậu tố", "Thêm hậu tố"),
-                ("Chuyển thành chữ hoa", "Chuyển thành chữ hoa"),
-                ("Chuyển thành chữ thường", "Chuyển thành chữ thường")
-            });
-
-        SetComboLabels(PositionDirectionCombo, _isEnglish
-            ? new[]
-            {
-                ("From start", "From start"),
-                ("From end", "From end")
-            }
-            : new[]
-            {
-                ("Từ đầu tên", "Từ đầu tên"),
-                ("Từ cuối tên", "Từ cuối tên")
-            });
+        foreach (var rule in _rules)
+            rule.RefreshLabels(_isEnglish);
     }
 
     private static string GetComboTag(ComboBox combo) =>
@@ -209,16 +180,16 @@ public partial class MainWindow : Window
     {
         using var dialog = new Forms.FolderBrowserDialog
         {
-            Description = T("Chọn thư mục chứa file", "Choose a folder containing files"),
+            Description = T(
+                "Chọn thư mục chứa file",
+                "Choose a folder containing files"),
             UseDescriptionForTitle = true,
             ShowNewFolderButton = false
         };
 
         if (dialog.ShowDialog() != Forms.DialogResult.OK ||
             string.IsNullOrWhiteSpace(dialog.SelectedPath))
-        {
             return;
-        }
 
         _knownPaths.Clear();
 
@@ -228,7 +199,8 @@ public partial class MainWindow : Window
                 ? SearchOption.AllDirectories
                 : SearchOption.TopDirectoryOnly;
 
-            foreach (string path in Directory.EnumerateFiles(dialog.SelectedPath, "*", option))
+            foreach (string path in Directory.EnumerateFiles(
+                dialog.SelectedPath, "*", option))
             {
                 _knownPaths.Add(Path.GetFullPath(path));
             }
@@ -251,12 +223,11 @@ public partial class MainWindow : Window
             CheckFileExists = true
         };
 
-        if (dialog.ShowDialog() != true) return;
+        if (dialog.ShowDialog() != true)
+            return;
 
         foreach (string path in dialog.FileNames)
-        {
             _knownPaths.Add(Path.GetFullPath(path));
-        }
 
         SourceText.Text = T(
             $"Đã chọn {_knownPaths.Count} file",
@@ -302,11 +273,15 @@ public partial class MainWindow : Window
         UpdateCount();
     }
 
-    private void FilterBox_TextChanged(object sender, TextChangedEventArgs e) => ApplyFilter();
+    private void FilterBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        ApplyFilter();
+    }
 
     private void ApplyFilter()
     {
-        if (PreviewGrid == null) return;
+        if (PreviewGrid == null)
+            return;
 
         var view = System.Windows.Data.CollectionViewSource.GetDefaultView(_files);
         string filter = FilterBox?.Text?.Trim() ?? "";
@@ -319,14 +294,18 @@ public partial class MainWindow : Window
 
     private void SelectAll_Click(object sender, RoutedEventArgs e)
     {
-        foreach (var row in _files) row.IsSelected = true;
+        foreach (var row in _files)
+            row.IsSelected = true;
+
         PreviewGrid.Items.Refresh();
         UpdateCount();
     }
 
     private void DeselectAll_Click(object sender, RoutedEventArgs e)
     {
-        foreach (var row in _files) row.IsSelected = false;
+        foreach (var row in _files)
+            row.IsSelected = false;
+
         PreviewGrid.Items.Refresh();
         UpdateCount();
     }
@@ -336,39 +315,50 @@ public partial class MainWindow : Window
         var kept = _files.Where(r => r.IsSelected).ToList();
 
         _files.Clear();
-        foreach (var row in kept) _files.Add(row);
+
+        foreach (var row in kept)
+            _files.Add(row);
 
         _knownPaths.Clear();
-        foreach (var row in kept) _knownPaths.Add(row.FullPath);
+
+        foreach (var row in kept)
+            _knownPaths.Add(row.FullPath);
 
         ApplyFilter();
         UpdateCount();
     }
 
-    private void SearchMode_Changed(object sender, SelectionChangedEventArgs e) =>
+    private void SearchMode_Changed(object sender, SelectionChangedEventArgs e)
+    {
         UpdatePositionControls();
+    }
 
     private void UpdatePositionControls()
     {
-        if (PositionBox == null) return;
+        if (PositionBox == null)
+            return;
 
         bool exact = GetComboTag(SearchModeCombo) == "ExactPosition";
+
         PositionBox.IsEnabled = exact;
         PositionDirectionCombo.IsEnabled = exact;
     }
 
-    private void Action_Changed(object sender, SelectionChangedEventArgs e) =>
+    private void Action_Changed(object sender, SelectionChangedEventArgs e)
+    {
         UpdateActionControls();
+    }
 
     private void UpdateActionControls()
     {
-        if (FindBox == null) return;
+        if (FindBox == null)
+            return;
 
         string action = GetComboTag(ActionCombo);
         bool findRequired = action is "Replace" or "Remove";
 
         FindBox.IsEnabled = findRequired;
-        ReplaceBox.IsEnabled = action == "Replace";
+        ReplaceBox.IsEnabled = action is "Replace" or "AddPrefix" or "AddSuffix";
 
         ReplaceLabel.Text = action switch
         {
@@ -380,8 +370,8 @@ public partial class MainWindow : Window
         SearchModeCombo.IsEnabled = findRequired;
         PositionBox.IsEnabled =
             findRequired && GetComboTag(SearchModeCombo) == "ExactPosition";
-
         PositionDirectionCombo.IsEnabled = PositionBox.IsEnabled;
+
         AllOccurrencesCheck.IsEnabled =
             findRequired && GetComboTag(SearchModeCombo) == "Anywhere";
     }
@@ -423,18 +413,17 @@ public partial class MainWindow : Window
         _rules.Add(rule);
         RulesGrid.SelectedItem = rule;
         RefreshRuleLabels();
-
-        foreach (var item in _rules)
-        {
-            item.RefreshLabels(_isEnglish);
-        }
     }
 
-    private void AddPrefixQuick_Click(object sender, RoutedEventArgs e) =>
+    private void AddPrefixQuick_Click(object sender, RoutedEventArgs e)
+    {
         AddQuickRule("AddPrefix", PrefixQuickBox.Text);
+    }
 
-    private void AddSuffixQuick_Click(object sender, RoutedEventArgs e) =>
+    private void AddSuffixQuick_Click(object sender, RoutedEventArgs e)
+    {
         AddQuickRule("AddSuffix", SuffixQuickBox.Text);
+    }
 
     private void AddQuickRule(string action, string value)
     {
@@ -462,24 +451,33 @@ public partial class MainWindow : Window
 
     private void RemoveRule_Click(object sender, RoutedEventArgs e)
     {
-        if (RulesGrid.SelectedItem is not RenameRule rule) return;
+        if (RulesGrid.SelectedItem is not RenameRule rule)
+            return;
 
         _rules.Remove(rule);
         RenumberRules();
     }
 
-    private void MoveRuleUp_Click(object sender, RoutedEventArgs e) => MoveRule(-1);
+    private void MoveRuleUp_Click(object sender, RoutedEventArgs e)
+    {
+        MoveRule(-1);
+    }
 
-    private void MoveRuleDown_Click(object sender, RoutedEventArgs e) => MoveRule(1);
+    private void MoveRuleDown_Click(object sender, RoutedEventArgs e)
+    {
+        MoveRule(1);
+    }
 
     private void MoveRule(int delta)
     {
-        if (RulesGrid.SelectedItem is not RenameRule rule) return;
+        if (RulesGrid.SelectedItem is not RenameRule rule)
+            return;
 
         int index = _rules.IndexOf(rule);
         int target = index + delta;
 
-        if (target < 0 || target >= _rules.Count) return;
+        if (target < 0 || target >= _rules.Count)
+            return;
 
         _rules.Move(index, target);
         RenumberRules();
@@ -497,7 +495,10 @@ public partial class MainWindow : Window
         RulesGrid.Items.Refresh();
     }
 
-    private void Preview_Click(object sender, RoutedEventArgs e) => BuildPreview();
+    private void Preview_Click(object sender, RoutedEventArgs e)
+    {
+        BuildPreview();
+    }
 
     private void BuildPreview()
     {
@@ -527,25 +528,17 @@ public partial class MainWindow : Window
                 string stem = oldName[..(oldName.Length - ext.Length)];
 
                 foreach (var rule in _rules)
-                {
                     stem = ApplyRule(stem, rule);
-                }
 
                 string newName = stem + ext;
                 computed[row] = newName;
 
                 if (!IsValidFileName(newName))
-                {
                     statuses[row] = T("Tên không hợp lệ", "Invalid filename");
-                }
                 else if (string.Equals(oldName, newName, StringComparison.Ordinal))
-                {
                     statuses[row] = T("Không thay đổi", "Unchanged");
-                }
                 else
-                {
                     statuses[row] = T("Sẵn sàng", "Ready");
-                }
             }
             catch (RuleMismatchException ex)
             {
@@ -568,9 +561,7 @@ public partial class MainWindow : Window
             string target = Path.Combine(pair.Key.Folder, pair.Value);
 
             if (!proposedTargets.TryGetValue(target, out var list))
-            {
-                proposedTargets[target] = list = new();
-            }
+                proposedTargets[target] = list = new List<FileRow>();
 
             list.Add(pair.Key);
         }
@@ -578,9 +569,7 @@ public partial class MainWindow : Window
         foreach (var pair in proposedTargets.Where(p => p.Value.Count > 1))
         {
             foreach (var row in pair.Value)
-            {
                 statuses[row] = T("Trùng tên đích", "Duplicate target");
-            }
         }
 
         var movingSources = new HashSet<string>(
@@ -655,7 +644,8 @@ public partial class MainWindow : Window
                 if (index < 0)
                 {
                     throw new RuleMismatchException(
-                        T($"không tìm thấy '{rule.Find}'", $"'{rule.Find}' was not found"));
+                        T($"không tìm thấy '{rule.Find}'",
+                          $"'{rule.Find}' was not found"));
                 }
 
                 if (rule.Action == "Remove")
@@ -673,7 +663,8 @@ public partial class MainWindow : Window
                 if (!stem.StartsWith(rule.Find, cmp))
                 {
                     throw new RuleMismatchException(
-                        T("cụm tìm không nằm ở đầu tên", "text does not match filename prefix"));
+                        T("cụm tìm không nằm ở đầu tên",
+                          "text does not match filename prefix"));
                 }
 
                 return rule.Action == "Remove"
@@ -684,7 +675,8 @@ public partial class MainWindow : Window
                 if (!stem.EndsWith(rule.Find, cmp))
                 {
                     throw new RuleMismatchException(
-                        T("cụm tìm không nằm ở cuối tên", "text does not match filename suffix"));
+                        T("cụm tìm không nằm ở cuối tên",
+                          "text does not match filename suffix"));
                 }
 
                 return rule.Action == "Remove"
@@ -695,7 +687,8 @@ public partial class MainWindow : Window
                 if (rule.Position < 1 || rule.Position > stem.Length)
                 {
                     throw new RuleMismatchException(
-                        T("vị trí nằm ngoài tên file", "position is outside the filename"));
+                        T("vị trí nằm ngoài tên file",
+                          "position is outside the filename"));
                 }
 
                 index = rule.PositionFromEnd
@@ -729,9 +722,7 @@ public partial class MainWindow : Window
         StringComparison comparison)
     {
         if (comparison == StringComparison.Ordinal)
-        {
             return input.Replace(find, replace, StringComparison.Ordinal);
-        }
 
         var result = input;
         int start = 0;
@@ -740,21 +731,25 @@ public partial class MainWindow : Window
         {
             int idx = result.IndexOf(find, start, StringComparison.OrdinalIgnoreCase);
 
-            if (idx < 0) break;
+            if (idx < 0)
+                break;
 
             result = result.Remove(idx, find.Length).Insert(idx, replace);
             start = idx + replace.Length;
 
-            if (start > result.Length) break;
+            if (start > result.Length)
+                break;
         }
 
         return result;
     }
 
-    private static bool IsValidFileName(string name) =>
-        !string.IsNullOrWhiteSpace(name) &&
-        name.IndexOfAny(Path.GetInvalidFileNameChars()) < 0 &&
-        name is not "." and not "..";
+    private static bool IsValidFileName(string name)
+    {
+        return !string.IsNullOrWhiteSpace(name)
+            && name.IndexOfAny(Path.GetInvalidFileNameChars()) < 0
+            && name is not "." and not "..";
+    }
 
     private void Rename_Click(object sender, RoutedEventArgs e)
     {
@@ -766,18 +761,22 @@ public partial class MainWindow : Window
 
         if (ready.Count == 0)
         {
-            ShowError(T("Không có file hợp lệ để đổi tên.", "No valid files to rename."));
+            ShowError(T(
+                "Không có file hợp lệ để đổi tên.",
+                "No valid files to rename."));
             return;
         }
 
         var answer = MessageBox.Show(
-            T($"Bạn sắp đổi tên {ready.Count} file. Tiếp tục?",
-              $"You are about to rename {ready.Count} files. Continue?"),
+            T(
+                $"Bạn sắp đổi tên {ready.Count} file. Tiếp tục?",
+                $"You are about to rename {ready.Count} files. Continue?"),
             "Portable Bulk File Renamer",
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
 
-        if (answer != MessageBoxResult.Yes) return;
+        if (answer != MessageBoxResult.Yes)
+            return;
 
         var records = ready.Select(r => new RenameRecord
         {
@@ -804,8 +803,8 @@ public partial class MainWindow : Window
                 if (File.Exists(item.Record.FinalPath))
                 {
                     throw new IOException(
-                        T("Tên đích đã tồn tại: ", "Target already exists: ") +
-                        item.Record.FinalPath);
+                        T("Tên đích đã tồn tại: ", "Target already exists: ")
+                        + item.Record.FinalPath);
                 }
 
                 File.Move(item.Temp, item.Record.FinalPath);
@@ -820,10 +819,11 @@ public partial class MainWindow : Window
             {
                 string path = records.FirstOrDefault(
                     r => r.OriginalPath.Equals(
-                        row.FullPath,
-                        StringComparison.OrdinalIgnoreCase))?.FinalPath ?? row.FullPath;
+                        row.FullPath, StringComparison.OrdinalIgnoreCase))
+                    ?.FinalPath ?? row.FullPath;
 
-                if (File.Exists(path)) _knownPaths.Add(path);
+                if (File.Exists(path))
+                    _knownPaths.Add(path);
             }
 
             LoadRows(_knownPaths);
@@ -841,7 +841,8 @@ public partial class MainWindow : Window
             {
                 try
                 {
-                    if (File.Exists(item.Temp) && !File.Exists(item.Record.OriginalPath))
+                    if (File.Exists(item.Temp) &&
+                        !File.Exists(item.Record.OriginalPath))
                     {
                         File.Move(item.Temp, item.Record.OriginalPath);
                     }
@@ -853,13 +854,14 @@ public partial class MainWindow : Window
                 }
                 catch
                 {
-                    // Best-effort rollback.
+                    // Continue attempting to restore other files.
                 }
             }
 
             ShowError(
                 T("Đổi tên gặp lỗi; đã thử khôi phục các file. ",
-                  "Rename failed; rollback was attempted. ") + ex.Message);
+                  "Rename failed; rollback was attempted. ")
+                + ex.Message);
 
             LoadRows(_knownPaths.Where(File.Exists));
         }
@@ -868,9 +870,7 @@ public partial class MainWindow : Window
     private void Undo_Click(object sender, RoutedEventArgs e)
     {
         if (_lastBatch.Count == 0)
-        {
             _lastBatch = ReadLastHistoryBatch();
-        }
 
         if (_lastBatch.Count == 0)
         {
@@ -883,16 +883,18 @@ public partial class MainWindow : Window
             if (!File.Exists(record.FinalPath))
             {
                 ShowError(
-                    T("Không tìm thấy file đã đổi tên: ", "Renamed file not found: ") +
-                    record.FinalPath);
+                    T("Không tìm thấy file đã đổi tên: ",
+                      "Renamed file not found: ")
+                    + record.FinalPath);
                 return;
             }
 
             if (File.Exists(record.OriginalPath))
             {
                 ShowError(
-                    T("Tên gốc đã được sử dụng: ", "Original path is occupied: ") +
-                    record.OriginalPath);
+                    T("Tên gốc đã được sử dụng: ",
+                      "Original path is occupied: ")
+                    + record.OriginalPath);
                 return;
             }
         }
@@ -912,16 +914,12 @@ public partial class MainWindow : Window
             }
 
             foreach (var item in staged)
-            {
                 File.Move(item.Temp, item.Record.OriginalPath);
-            }
 
             _knownPaths.Clear();
 
             foreach (var record in _lastBatch)
-            {
                 _knownPaths.Add(record.OriginalPath);
-            }
 
             _lastBatch.Clear();
             LoadRows(_knownPaths);
@@ -948,9 +946,9 @@ public partial class MainWindow : Window
             {
                 var batches =
                     JsonSerializer.Deserialize<List<List<RenameRecord>>>(
-                        File.ReadAllText(path)) ?? new();
+                        File.ReadAllText(path)) ?? new List<List<RenameRecord>>();
 
-                return batches.LastOrDefault() ?? new();
+                return batches.LastOrDefault() ?? new List<RenameRecord>();
             }
         }
         catch
@@ -958,7 +956,7 @@ public partial class MainWindow : Window
             // Ignore invalid or unavailable history.
         }
 
-        return new();
+        return new List<RenameRecord>();
     }
 
     private void SaveHistory(List<RenameRecord> batch)
@@ -969,7 +967,7 @@ public partial class MainWindow : Window
 
             var batches = File.Exists(path)
                 ? JsonSerializer.Deserialize<List<List<RenameRecord>>>(
-                    File.ReadAllText(path)) ?? new()
+                    File.ReadAllText(path)) ?? new List<List<RenameRecord>>()
                 : new List<List<RenameRecord>>();
 
             batches.Add(batch);
@@ -982,7 +980,7 @@ public partial class MainWindow : Window
         }
         catch
         {
-            // History persistence should not crash the rename operation.
+            // History persistence failure does not stop file renaming.
         }
     }
 
@@ -1014,22 +1012,24 @@ public partial class MainWindow : Window
     private void RefreshPreview()
     {
         if (_files.Count > 0 && _rules.Count > 0)
-        {
             BuildPreview();
-        }
     }
 
-    private void UpdateCount() =>
+    private void UpdateCount()
+    {
         CountText.Text = T(
             $"{_files.Count} file | đã chọn: {_files.Count(r => r.IsSelected)}",
             $"{_files.Count} files | selected: {_files.Count(r => r.IsSelected)}");
+    }
 
-    private void ShowError(string message) =>
+    private void ShowError(string message)
+    {
         MessageBox.Show(
             message,
             "Portable Bulk File Renamer",
             MessageBoxButton.OK,
             MessageBoxImage.Warning);
+    }
 }
 
 public sealed class FileRow : INotifyPropertyChanged
@@ -1074,8 +1074,11 @@ public sealed class FileRow : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    private void OnPropertyChanged([CallerMemberName] string? name = null) =>
+    private void OnPropertyChanged(
+        [CallerMemberName] string? name = null)
+    {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
 }
 
 public sealed class RenameRule : INotifyPropertyChanged
@@ -1149,8 +1152,11 @@ public sealed class RenameRule : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    private void OnPropertyChanged([CallerMemberName] string? name = null) =>
+    private void OnPropertyChanged(
+        [CallerMemberName] string? name = null)
+    {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
 }
 
 public sealed class RenameRecord
