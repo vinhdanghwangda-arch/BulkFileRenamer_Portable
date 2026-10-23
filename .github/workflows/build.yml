@@ -26,7 +26,7 @@ jobs:
         shell: pwsh
         run: |
           if (!(Test-Path "PortableBulkFileRenamer.csproj")) {
-            Write-Error "Project file not found at repository root."
+            Write-Error "PortableBulkFileRenamer.csproj not found."
             exit 1
           }
 
@@ -52,7 +52,7 @@ jobs:
           }
 
           $exe | ForEach-Object {
-            Write-Host "Generated: $($_.FullName)"
+            Write-Host "Generated: $($_.Name)"
             Write-Host "Size: $($_.Length) bytes"
           }
 
