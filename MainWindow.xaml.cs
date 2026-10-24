@@ -2,7 +2,9 @@ using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,12 +19,12 @@ public partial class MainWindow : Window
 {
     private readonly ObservableCollection<FileRow> _files = new();
     private readonly ObservableCollection<RenameRule> _rules = new();
+
     private readonly HashSet<string> _knownPaths =
         new(StringComparer.OrdinalIgnoreCase);
 
     private List<RenameRecord> _lastBatch = new();
     private bool _isEnglish;
-    private bool _syncingGridSelection;
 
     private string T(string vi, string en) => _isEnglish ? en : vi;
 
@@ -209,8 +211,9 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            ShowError(T("Không thể đọc thư mục: ", "Unable to read folder: ")
-                + ex.Message);
+            ShowError(T(
+                "Không thể đọc thư mục: ",
+                "Unable to read folder: ") + ex.Message);
         }
     }
 
@@ -218,7 +221,9 @@ public partial class MainWindow : Window
     {
         var dialog = new OpenFileDialog
         {
-            Title = T("Chọn một hoặc nhiều file", "Select one or more files"),
+            Title = T(
+                "Chọn một hoặc nhiều file",
+                "Select one or more files"),
             Multiselect = true,
             CheckFileExists = true
         };
@@ -255,7 +260,10 @@ public partial class MainWindow : Window
                 OldName = Path.GetFileName(path),
                 NewName = Path.GetFileName(path),
                 Folder = Path.GetDirectoryName(path) ?? "",
-                IsSelected = true,
+
+                // Files are unchecked by default.
+                IsSelected = false,
+
                 Status = T("Chưa xem trước", "Not previewed")
             });
         }
@@ -333,39 +341,15 @@ public partial class MainWindow : Window
         UpdateCount();
     }
 
+    // Selecting grid rows must not change the Rename checkbox.
     private void PreviewGrid_SelectionChanged(
         object sender,
         SelectionChangedEventArgs e)
     {
-        if (_syncingGridSelection || PreviewGrid == null)
-            return;
-
-        try
-        {
-            _syncingGridSelection = true;
-
-            foreach (object item in e.AddedItems)
-            {
-                if (item is FileRow row)
-                    row.IsSelected = true;
-            }
-
-            foreach (object item in e.RemovedItems)
-            {
-                if (item is FileRow row)
-                    row.IsSelected = false;
-            }
-
-            PreviewGrid.Items.Refresh();
-            UpdateCount();
-        }
-        finally
-        {
-            _syncingGridSelection = false;
-        }
+        // Intentionally empty.
     }
 
-    // Fix: explicitly use WPF KeyEventArgs to avoid ambiguity with WinForms.
+    // Space toggles the Rename checkbox for the highlighted rows.
     private void PreviewGrid_PreviewKeyDown(
         object sender,
         System.Windows.Input.KeyEventArgs e)
@@ -425,6 +409,7 @@ public partial class MainWindow : Window
         bool findRequired = action is "Replace" or "Remove";
 
         FindBox.IsEnabled = findRequired;
+
         ReplaceBox.IsEnabled =
             action is "Replace" or "AddPrefix" or "AddSuffix";
 
@@ -438,12 +423,14 @@ public partial class MainWindow : Window
         SearchModeCombo.IsEnabled = findRequired;
 
         PositionBox.IsEnabled =
-            findRequired && GetComboTag(SearchModeCombo) == "ExactPosition";
+            findRequired &&
+            GetComboTag(SearchModeCombo) == "ExactPosition";
 
         PositionDirectionCombo.IsEnabled = PositionBox.IsEnabled;
 
         AllOccurrencesCheck.IsEnabled =
-            findRequired && GetComboTag(SearchModeCombo) == "Anywhere";
+            findRequired &&
+            GetComboTag(SearchModeCombo) == "Anywhere";
     }
 
     private void AddRule_Click(object sender, RoutedEventArgs e)
@@ -578,8 +565,8 @@ public partial class MainWindow : Window
         if (selected.Count == 0)
         {
             ShowError(T(
-                "Hãy chọn ít nhất một file.",
-                "Select at least one file."));
+                "Hãy tick ít nhất một file trong cột Đổi tên.",
+                "Check at least one file in the Rename column."));
             return;
         }
 
@@ -805,7 +792,7 @@ public partial class MainWindow : Window
         if (comparison == StringComparison.Ordinal)
             return input.Replace(find, replace, StringComparison.Ordinal);
 
-        var result = new System.Text.StringBuilder();
+        var result = new StringBuilder();
         int start = 0;
 
         while (start < input.Length)
@@ -833,6 +820,16 @@ public partial class MainWindow : Window
 
     private void Rename_Click(object sender, RoutedEventArgs e)
     {
+        var selected = _files.Where(r => r.IsSelected).ToList();
+
+        if (selected.Count == 0)
+        {
+            ShowError(T(
+                "Hãy tick ít nhất một file trong cột Đổi tên.",
+                "Check at least one file in the Rename column."));
+            return;
+        }
+
         BuildPreview();
 
         var ready = _files
@@ -902,7 +899,8 @@ public partial class MainWindow : Window
 
             foreach (FileRow row in _files)
             {
-                string path = renamedPaths.TryGetValue(row.FullPath, out string? finalPath)
+                string path = renamedPaths.TryGetValue(
+                    row.FullPath, out string? finalPath)
                     ? finalPath
                     : row.FullPath;
 
@@ -1123,8 +1121,8 @@ public partial class MainWindow : Window
             return;
 
         CountText.Text = T(
-            $"{_files.Count} file | đã chọn: {_files.Count(r => r.IsSelected)}",
-            $"{_files.Count} files | selected: {_files.Count(r => r.IsSelected)}");
+            $"{_files.Count} file | đã tick đổi tên: {_files.Count(r => r.IsSelected)}",
+            $"{_files.Count} files | checked for rename: {_files.Count(r => r.IsSelected)}");
     }
 
     private void ShowError(string message)
