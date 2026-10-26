@@ -1,8 +1,7 @@
 using System.Windows;
 
-namespace PortableBulkFileRenamer
+namespace PortableBulkFileRenamer;
+
+public partial class App : System.Windows.Application
 {
-    public partial class App : System.Windows.Application
-    {
-    }
 }
