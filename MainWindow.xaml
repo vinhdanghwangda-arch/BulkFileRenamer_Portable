@@ -1,11 +1,8 @@
 <Window x:Class="PortableBulkFileRenamer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Portable Bulk File Renamer"
-        Height="900" Width="1400"
-        MinHeight="720" MinWidth="1080"
-        WindowStartupLocation="CenterScreen">
-
+        Title="Portable Bulk File Renamer" Height="900" Width="1400"
+        MinHeight="720" MinWidth="1080" WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <Style TargetType="Button">
             <Setter Property="Padding" Value="12,6"/>
@@ -39,25 +36,20 @@
         </Grid.RowDefinitions>
 
         <DockPanel Grid.Row="0" Margin="0,0,0,8">
-            <ComboBox x:Name="LanguageCombo"
-                      Width="130"
-                      DockPanel.Dock="Right"
-                      SelectedIndex="0"
+            <ComboBox x:Name="LanguageCombo" Width="130"
+                      DockPanel.Dock="Right" SelectedIndex="0"
                       SelectionChanged="LanguageCombo_SelectionChanged">
                 <ComboBoxItem Content="Tiếng Việt" Tag="vi"/>
                 <ComboBoxItem Content="English" Tag="en"/>
             </ComboBox>
             <TextBlock x:Name="AppTitle"
                        Text="Portable Bulk File Renamer"
-                       FontSize="24"
-                       FontWeight="Bold"
+                       FontSize="24" FontWeight="Bold"
                        VerticalAlignment="Center"/>
         </DockPanel>
 
-        <GroupBox Grid.Row="1"
-                  x:Name="SourceGroup"
-                  Header="1. Nguồn file"
-                  Padding="8"
+        <GroupBox Grid.Row="1" x:Name="SourceGroup"
+                  Header="1. Nguồn file" Padding="8"
                   Margin="0,0,0,8">
             <Grid>
                 <Grid.RowDefinitions>
@@ -71,24 +63,19 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBox x:Name="SourceText"
-                         Grid.Row="0" Grid.Column="0"
-                         IsReadOnly="True"/>
-                <Button x:Name="ChooseFolderButton"
-                        Grid.Column="1"
+                <TextBox x:Name="SourceText" Grid.Row="0"
+                         Grid.Column="0" IsReadOnly="True"/>
+                <Button x:Name="ChooseFolderButton" Grid.Column="1"
                         Content="Chọn thư mục"
                         Click="ChooseFolder_Click"/>
-                <Button x:Name="ChooseFilesButton"
-                        Grid.Column="2"
+                <Button x:Name="ChooseFilesButton" Grid.Column="2"
                         Content="Chọn file"
                         Click="ChooseFiles_Click"/>
-                <Button x:Name="ClearButton"
-                        Grid.Column="3"
+                <Button x:Name="ClearButton" Grid.Column="3"
                         Content="Xóa danh sách"
                         Click="Clear_Click"/>
 
-                <StackPanel Grid.Row="1"
-                            Grid.ColumnSpan="4"
+                <StackPanel Grid.Row="1" Grid.ColumnSpan="4"
                             Orientation="Horizontal">
                     <CheckBox x:Name="RecursiveCheck"
                               Content="Bao gồm thư mục con"
@@ -99,8 +86,7 @@
                                Text="Lọc tên file:"
                                VerticalAlignment="Center"
                                Margin="18,0,0,0"/>
-                    <TextBox x:Name="FilterBox"
-                             Width="280"
+                    <TextBox x:Name="FilterBox" Width="280"
                              TextChanged="FilterBox_TextChanged"/>
                     <Button x:Name="SelectAllButton"
                             Content="Chọn tất cả"
@@ -115,11 +101,9 @@
             </Grid>
         </GroupBox>
 
-        <GroupBox Grid.Row="2"
-                  x:Name="RuleBuilderGroup"
+        <GroupBox Grid.Row="2" x:Name="RuleBuilderGroup"
                   Header="2. Tạo quy tắc đổi tên"
-                  Padding="8"
-                  Margin="0,0,0,8">
+                  Padding="8" Margin="0,0,0,8">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="1.1*"/>
@@ -186,23 +170,23 @@
                     <TextBox x:Name="PositionBox"
                              Width="60" Text="1"/>
                     <ComboBox x:Name="PositionDirectionCombo"
-                              Width="135" SelectedIndex="0">
-                        <ComboBoxItem Content="Từ đầu tên" Tag="Start"/>
-                        <ComboBoxItem Content="Từ cuối tên" Tag="End"/>
+                              Width="220" SelectedIndex="0">
+                        <ComboBoxItem Content="Khoảng cách từ đầu tên"
+                                      Tag="Start"/>
+                        <ComboBoxItem Content="Khoảng cách từ cuối tên"
+                                      Tag="End"/>
                     </ComboBox>
                 </StackPanel>
 
                 <StackPanel Grid.Row="2" Grid.Column="4"
                             Margin="4,0,4,4">
                     <TextBlock x:Name="ExampleStartText"
-                               Text="Ví dụ: 123_AHU — ký tự thứ 4 là _, ký tự thứ 5 là A."
-                               TextWrapping="Wrap"
-                               FontSize="11"
+                               Text="Khoảng cách từ đầu tên là 5 → ký tự A, là 6 → ký tự H."
+                               TextWrapping="Wrap" FontSize="11"
                                Foreground="#FF606A75"/>
                     <TextBlock x:Name="ExampleEndText"
-                               Text="Ví dụ: 123_AHU — ký tự thứ 1 là U, ký tự thứ 2 là H, ký tự thứ 3 là A."
-                               TextWrapping="Wrap"
-                               FontSize="11"
+                               Text="Khoảng cách từ cuối tên là 1 → ký tự U, là 3 → ký tự A."
+                               TextWrapping="Wrap" FontSize="11"
                                Foreground="#FF606A75"/>
                 </StackPanel>
 
@@ -223,6 +207,7 @@
                 <TextBlock x:Name="SuffixLabel"
                            Grid.Row="3" Grid.Column="1"
                            Text="Suffix — Cuối tên file" Margin="4"/>
+
                 <TextBox x:Name="PrefixQuickBox"
                          Grid.Row="4" Grid.Column="0"/>
                 <TextBox x:Name="SuffixQuickBox"
@@ -243,8 +228,7 @@
                 <TextBlock x:Name="ExtensionNote"
                            Grid.Row="5" Grid.ColumnSpan="5"
                            Text="Tìm kiếm trên tên file, không gồm phần mở rộng; phần mở rộng được giữ nguyên."
-                           Margin="4"
-                           Foreground="#FF4B647A"/>
+                           Margin="4" Foreground="#FF4B647A"/>
 
                 <StackPanel Grid.Row="6" Grid.ColumnSpan="5"
                             Orientation="Horizontal"
@@ -263,30 +247,42 @@
                             Content="Xuống ↓"
                             Click="MoveRuleDown_Click"/>
                     <Button x:Name="PreviewButton"
-                            Content="Xem trước"
+                            Content="XEM TRƯỚC"
                             Click="Preview_Click"
-                            Background="#FFDAEAF8"/>
+                            Background="#FF1976D2"
+                            Foreground="White"
+                            BorderBrush="#FF125AA0"
+                            BorderThickness="2"
+                            FontWeight="Bold" FontSize="14"
+                            Padding="18,10" MinHeight="42"/>
                     <Button x:Name="RenameButton"
-                            Content="Đổi tên file đã chọn"
+                            Content="ĐỔI TÊN FILE ĐÃ CHỌN"
                             Click="Rename_Click"
-                            Background="#FFD9F2D9"/>
+                            Background="#FF218838"
+                            Foreground="White"
+                            BorderBrush="#FF145523"
+                            BorderThickness="2"
+                            FontWeight="Bold" FontSize="14"
+                            Padding="20,10" MinHeight="44"/>
                     <Button x:Name="UndoButton"
-                            Content="Hoàn tác"
-                            Click="Undo_Click"/>
+                            Content="HOÀN TÁC"
+                            Click="Undo_Click"
+                            Background="#FFFFC107"
+                            Foreground="#FF212529"
+                            BorderBrush="#FFB8860B"
+                            BorderThickness="2"
+                            FontWeight="Bold" FontSize="14"
+                            Padding="18,10" MinHeight="42"/>
                 </StackPanel>
             </Grid>
         </GroupBox>
 
-        <GroupBox Grid.Row="3"
-                  x:Name="RulesListGroup"
+        <GroupBox Grid.Row="3" x:Name="RulesListGroup"
                   Header="3. Thứ tự quy tắc (chạy từ trên xuống)"
-                  Padding="5"
-                  Margin="0,0,0,8">
-            <DataGrid x:Name="RulesGrid"
-                      Height="120"
+                  Padding="5" Margin="0,0,0,8">
+            <DataGrid x:Name="RulesGrid" Height="120"
                       AutoGenerateColumns="False"
-                      CanUserAddRows="False"
-                      IsReadOnly="True"
+                      CanUserAddRows="False" IsReadOnly="True"
                       SelectionMode="Single"
                       SelectionUnit="FullRow">
                 <DataGrid.Columns>
@@ -304,12 +300,10 @@
                                         Width="1.2*"/>
                     <DataGridTextColumn x:Name="RuleFindColumn"
                                         Header="Tìm"
-                                        Binding="{Binding Find}"
-                                        Width="*"/>
+                                        Binding="{Binding Find}" Width="*"/>
                     <DataGridTextColumn x:Name="RuleReplaceColumn"
                                         Header="Thay bằng"
-                                        Binding="{Binding Replace}"
-                                        Width="*"/>
+                                        Binding="{Binding Replace}" Width="*"/>
                     <DataGridTextColumn x:Name="RulePositionColumn"
                                         Header="Vị trí"
                                         Binding="{Binding PositionDescription}"
@@ -318,21 +312,26 @@
             </DataGrid>
         </GroupBox>
 
-        <DataGrid Grid.Row="4"
-                  x:Name="PreviewGrid"
+        <DataGrid Grid.Row="4" x:Name="PreviewGrid"
                   AutoGenerateColumns="False"
                   CanUserAddRows="False"
                   SelectionMode="Extended"
                   SelectionUnit="FullRow"
+                  PreviewKeyDown="PreviewGrid_PreviewKeyDown"
                   AlternatingRowBackground="#FFF4F7FA"
-                  HeadersVisibility="Column"
-                  SelectionChanged="PreviewGrid_SelectionChanged"
-                  PreviewKeyDown="PreviewGrid_PreviewKeyDown">
+                  HeadersVisibility="Column">
             <DataGrid.Columns>
-                <DataGridCheckBoxColumn x:Name="IncludeColumn"
-                                        Header="Đổi tên"
-                                        Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
-                                        Width="65"/>
+                <DataGridTemplateColumn x:Name="IncludeColumn"
+                                        Header="Đổi tên" Width="65">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      PreviewMouseLeftButtonDown="IncludeCheckBox_PreviewMouseLeftButtonDown"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
                 <DataGridTextColumn x:Name="StatusColumn"
                                     Header="Trạng thái"
                                     Binding="{Binding Status}"
@@ -358,8 +357,7 @@
                        VerticalAlignment="Center"/>
             <TextBlock x:Name="CountText"
                        DockPanel.Dock="Right"
-                       Text="0 file"
-                       FontWeight="SemiBold"
+                       Text="0 file" FontWeight="SemiBold"
                        VerticalAlignment="Center"/>
         </DockPanel>
     </Grid>
