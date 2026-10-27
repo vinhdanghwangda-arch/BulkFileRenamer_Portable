@@ -21,12 +21,14 @@ public partial class MainWindow : Window
     private readonly HashSet<string> _knownPaths = new(StringComparer.OrdinalIgnoreCase);
     private List<RenameRecord> _lastBatch = new();
     private bool _isEnglish;
+    private bool _uiReady;
 
     private string T(string vi, string en) => _isEnglish ? en : vi;
 
     public MainWindow()
     {
         InitializeComponent();
+        _uiReady = true;
         PreviewGrid.ItemsSource = _files;
         RulesGrid.ItemsSource = _rules;
         UpdateLanguage();
@@ -229,6 +231,7 @@ public partial class MainWindow : Window
 
     private void SearchMode_Changed(object sender, SelectionChangedEventArgs e)
     {
+        if (!_uiReady) return;
         UpdatePositionControls();
         UpdateActionControls();
     }
@@ -242,10 +245,20 @@ public partial class MainWindow : Window
         PositionDirectionCombo.IsEnabled = needsSearch && exact;
     }
 
-    private void Action_Changed(object sender, SelectionChangedEventArgs e) => UpdateActionControls();
+    private void Action_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        // ComboBox selection events can fire while InitializeComponent is still building the XAML tree.
+        if (!_uiReady) return;
+        UpdateActionControls();
+    }
+
     private void UpdateActionControls()
     {
-        if (FindBox == null || ActionCombo == null) return;
+        // Avoid touching controls that have not yet been created by the XAML loader.
+        if (!_uiReady || FindBox == null || ReplaceBox == null || ActionCombo == null ||
+            SearchModeCombo == null || PositionBox == null || PositionDirectionCombo == null ||
+            CaseSensitiveCheck == null || AllOccurrencesCheck == null || ReplaceLabel == null)
+            return;
 
         string action = GetComboTag(ActionCombo);
         bool findRequired = action is "Replace" or "Remove" or "Uppercase" or "Lowercase";
