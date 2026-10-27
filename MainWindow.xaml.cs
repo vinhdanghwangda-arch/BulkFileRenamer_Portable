@@ -1,14 +1,10 @@
-using Microsoft.Win32;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.IO;
-using System.Runtime.CompilerServices;
-using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
-using ComboBox = System.Windows.Controls.ComboBox;
-using Forms = System.Windows.Forms;
 
+using MessageBox = System.Windows.MessageBox;
+using CheckBox = System.Windows.Controls.CheckBox;
+using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
+using Forms = System.Windows.Forms;
 namespace PortableBulkFileRenamer;
 
 public partial class MainWindow : Window
