@@ -1,3 +1,10 @@
+## Build fix update (2026-10-27)
+
+- Added explicit WPF aliases for `MessageBox` and `CheckBox`, and the Microsoft.Win32 alias for `OpenFileDialog`, to resolve ambiguous type references when Windows Forms is also enabled.
+- Removed the unused `_changingLanguage` field and assignments.
+- The Node.js 20 deprecation notice from GitHub Actions is a warning, not the C# compile error shown in the build log.
+- This source package has been patched from the reported diagnostics, but it has not been compiled in this environment because the .NET SDK is unavailable here. Run the GitHub Actions workflow or build on Windows to verify.
+
 # Portable Bulk File Renamer
 
 Ứng dụng WPF C# dành cho Windows 10/11 x64 để đổi tên hàng loạt file cục bộ. Giao diện có Tiếng Việt/English. Ứng dụng không cần kết nối mạng và không gửi tên file hoặc nội dung file ra ngoài.

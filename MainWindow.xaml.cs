@@ -1,10 +1,17 @@
+using Microsoft.Win32;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
-
-using MessageBox = System.Windows.MessageBox;
+using ComboBox = System.Windows.Controls.ComboBox;
 using CheckBox = System.Windows.Controls.CheckBox;
+using MessageBox = System.Windows.MessageBox;
 using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 using Forms = System.Windows.Forms;
+
 namespace PortableBulkFileRenamer;
 
 public partial class MainWindow : Window
@@ -14,7 +21,6 @@ public partial class MainWindow : Window
     private readonly HashSet<string> _knownPaths = new(StringComparer.OrdinalIgnoreCase);
     private List<RenameRecord> _lastBatch = new();
     private bool _isEnglish;
-    private bool _changingLanguage;
 
     private string T(string vi, string en) => _isEnglish ? en : vi;
 
@@ -40,7 +46,6 @@ public partial class MainWindow : Window
 
     private void UpdateLanguage()
     {
-        _changingLanguage = true;
         Title = "Portable Bulk File Renamer";
         AppTitle.Text = "Portable Bulk File Renamer";
         SourceGroup.Header = T("1. Nguồn file", "1. File source");
@@ -89,7 +94,6 @@ public partial class MainWindow : Window
         NewColumn.Header = T("Tên mới dự kiến", "Proposed name");
         FolderColumn.Header = T("Thư mục", "Folder");
         PrivacyText.Text = T("Chạy cục bộ; không gửi file hoặc tên file ra ngoài.", "Runs locally; no files or filenames are sent externally.");
-        _changingLanguage = false;
         UpdateCount();
         UpdateActionControls();
     }
@@ -561,7 +565,7 @@ public partial class MainWindow : Window
     private void ShowError(string message) => MessageBox.Show(message, "Portable Bulk File Renamer", MessageBoxButton.OK, MessageBoxImage.Warning);
 }
 
-public sealed class FileRow : INotifyPropertyChanged
+public sealed class FileRow : System.ComponentModel.INotifyPropertyChanged
 {
     private bool _isSelected;
     private string _newName = "";
@@ -572,11 +576,11 @@ public sealed class FileRow : INotifyPropertyChanged
     public bool IsSelected { get => _isSelected; set { _isSelected = value; OnPropertyChanged(); } }
     public string NewName { get => _newName; set { _newName = value; OnPropertyChanged(); } }
     public string Status { get => _status; set { _status = value; OnPropertyChanged(); } }
-    public event PropertyChangedEventHandler? PropertyChanged;
-    private void OnPropertyChanged([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+    private void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(name));
 }
 
-public sealed class RenameRule : INotifyPropertyChanged
+public sealed class RenameRule : System.ComponentModel.INotifyPropertyChanged
 {
     private int _order;
     private bool _caseSensitive;
@@ -599,8 +603,8 @@ public sealed class RenameRule : INotifyPropertyChanged
         PositionDescription = SearchMode == "ExactPosition" ? $"{Position} ({(PositionFromEnd ? (english ? "distance from end" : "khoảng cách từ cuối tên") : (english ? "distance from start" : "khoảng cách từ đầu tên"))})" : "—";
         OnPropertyChanged(nameof(SearchModeLabel)); OnPropertyChanged(nameof(ActionLabel)); OnPropertyChanged(nameof(PositionDescription));
     }
-    public event PropertyChangedEventHandler? PropertyChanged;
-    private void OnPropertyChanged([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+    private void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(name));
 }
 
 public sealed class RenameRecord
